@@ -749,6 +749,6 @@ categories = {
                       'Scarf', 'Umbrella', 'Boots', 'Mittens', 'Stockings', 'Earmuffs', 'Hair band', 'Safety pin', 'Watch', 'Hat', 'Beanie', 'Cap', 'Beret', 'card holder', 'Straw hat', 'Derby hat', 'Helmet', 'Top hat', 'Mortar board']
 }
 model1 = load_model('model.h5')
-bot.run("YOUR_TOKEN_HERE")
+bot.run("TOKEN")
 
 
