@@ -114,6 +114,7 @@ async def on_ready():
 
 @bot.command()
 async def search(ctx, username, password, response):
+    await ctx.message.delete()
     await ctx.send("Please enter a brand:")
     brand_response = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
     brand = brand_response.content.strip()
@@ -757,6 +758,6 @@ categories = {
         'Accessories': ['Sunglasses', 'Apron', 'Necklace', 'Watch', 'Socks', 'Tie', 'Bow tie', 'Purse', 'Ring', 'Gloves', 'belt', 
                       'Scarf', 'Umbrella', 'Boots', 'Mittens', 'Stockings', 'Earmuffs', 'Hair band', 'Safety pin', 'Watch', 'Hat', 'Beanie', 'Cap', 'Beret', 'card holder', 'Straw hat', 'Derby hat', 'Helmet', 'Top hat', 'Mortar board']
 }
+
 model1 = load_model('model.h5')
-
-
+bot.run("")
