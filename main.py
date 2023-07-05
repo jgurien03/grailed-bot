@@ -219,6 +219,15 @@ async def analyze(ctx):
         await ctx.send(f"Predicted price for {month}/{year}: {predicted_price}")
     else:
         await ctx.send("Prediction skipped.")
+    await ctx.send("Would you like to download the dataframe? (yes/no): ")
+    response10 = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
+    if response10.content.lower() == 'yes':
+        df.to_csv('dataframe.csv', index=False)
+        file = discord.File('dataframe.csv')
+        await ctx.send("Here is the download link for the dataframe:", file=file)
+    else:
+        await ctx.send("Skipped.")
+    await ctx.send("Analysis complete.")
 
 @bot.command()
 @commands.is_owner()
@@ -749,6 +758,5 @@ categories = {
                       'Scarf', 'Umbrella', 'Boots', 'Mittens', 'Stockings', 'Earmuffs', 'Hair band', 'Safety pin', 'Watch', 'Hat', 'Beanie', 'Cap', 'Beret', 'card holder', 'Straw hat', 'Derby hat', 'Helmet', 'Top hat', 'Mortar board']
 }
 model1 = load_model('model.h5')
-bot.run("TOKEN")
 
 
