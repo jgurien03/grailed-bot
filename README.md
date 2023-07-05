@@ -6,6 +6,7 @@ A simple discord bot fork of my own Grailed scraper which you can find at [https
 - !shutdown: shuts down the bot; only available for the owner (me) at the moment
 
 **HOW TO RUN:** <br />
+<br />
 Using the commands above, type them (in that order) to receive results. Once the search stops, you will receive a notification saying 'search complete.' The bot may go off for a short period of time, and once it comes back online, you can use the '!analyze' command. Once this is complete, you may search again.
 
 **TO DO:**
