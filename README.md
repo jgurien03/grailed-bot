@@ -8,5 +8,5 @@ A simple discord bot fork of my own Grailed scraper which you can find at [https
 **TO DO:**
 - Get hosted
 - Fix infinite scroll timeout
-- Update model's database to yield lower validation loss
+- Update model's train features to yield lower validation loss
 - Include more dataframe options
