@@ -113,7 +113,10 @@ async def on_ready():
 
 
 @bot.command()
-async def search(ctx, brand, username, password, response):
+async def search(ctx, username, password, response):
+    await ctx.send("Please enter a brand:")
+    brand_response = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
+    brand = brand_response.content.strip()
     await ctx.send(f"Searching for brand: {brand} with response: {response}")
     driver = create_webdriver()
     await asyncio.sleep(2)
@@ -154,13 +157,13 @@ async def analyze(ctx):
     await ctx.send("Would you like to see each category and their feed appearance count? (yes/no): ")
     response1 = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
     if response1.content.lower() == 'yes':
-        visualize_category_distribution(ctx, df)
+        await visualize_category_distribution(ctx, df)
     else:
         await ctx.send("Graph display skipped.")
     await ctx.send("Would you like to see each category and their prices compared against each other? (yes/no): ")
     response2 = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
     if response2.content.lower() == 'yes':
-        plot_category_prices(df, 'Category')
+        await plot_category_prices(ctx, df, 'Category')
     else:
         await ctx.send("Graph display skipped.")
 
@@ -178,9 +181,9 @@ async def analyze(ctx):
                 await ctx.send("Select a category: (Tops, Bottoms, Skirts, Dresses, Shoes, Outerwear, Accessories)")
                 response5 = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
                 df2 = filter_dataframe_by_category(df, 'Category', response5.content.strip())
-                plot_price_vs_upload_date(df2, date)
+                await plot_price_vs_upload_date(ctx, df2, date)
             else:
-                plot_price_vs_upload_date(df2, date)
+                await plot_price_vs_upload_date(ctx, df2, date)
         else:
             await ctx.send("Invalid time unit. Must specify days, months, or years.")
     else:
@@ -196,9 +199,9 @@ async def analyze(ctx):
             await ctx.send("Select a category: (Tops, Bottoms, Skirts, Dresses, Shoes, Outerwear, Accessories)")
             response8 = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
             df3 = filter_dataframe_by_category(df, 'Category', response8.content.strip())
-            plot_price_by_size(df3, 'Size', 'Original Price')
+            await plot_price_by_size(ctx, df3, 'Size', 'Original Price')
         else:
-            plot_price_by_size(df3, 'Size', 'Original Price')
+            await plot_price_by_size(ctx, df3, 'Size', 'Original Price')
     else:
         await ctx.send("Graph display skipped.")
 
@@ -217,6 +220,11 @@ async def analyze(ctx):
     else:
         await ctx.send("Prediction skipped.")
 
+@bot.command()
+@commands.is_owner()
+async def shutdown(context):
+    await context.send("Shutting down...")
+    exit()
 
 def create_webdriver():
     service = Service(executable_path=r'/usr/bin/chromedriver')
@@ -444,20 +452,14 @@ async def visualize_category_distribution(ctx, df):
     plt.ylabel('Count')
     plt.title('Distribution of Categories')
     plt.xticks(rotation=45)
-    
-    # Create a buffer to hold the plot image
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    
-    # Create a discord.File object from the buffer
-    image = discord.File(buffer, filename='category_distribution.png')
-    
-    # Send the image file as an attachment in Discord
-    await ctx.send(file=image)
+    filename = 'category_count.png'
+    plt.savefig(filename)
+    with open(filename, 'rb') as file:
+        image = discord.File(file)
+        await ctx.send(file=image)
+    plt.close()
 
-
-def plot_category_prices(df, category_col):
+async def plot_category_prices(ctx, df, category_col):
     categories = df[category_col].unique()
     bar_positions = np.arange(len(categories))
     bar_width = 0.4
@@ -468,7 +470,12 @@ def plot_category_prices(df, category_col):
     plt.xticks(bar_positions, categories)
     plt.ylabel('Price')
     plt.title('Average Price Comparison ($)')
-    plt.show()
+    filename = 'category_prices.png'
+    plt.savefig(filename)
+    with open(filename, 'rb') as file:
+        image = discord.File(file)
+        await ctx.send(file=image)
+    plt.close()
 
 def get_relative_date(time_string):
     current_datetime = datetime.now()
@@ -500,7 +507,7 @@ def get_relative_date(time_string):
     return relative_date
 
 
-def plot_price_vs_upload_date(df, date):
+async def plot_price_vs_upload_date(ctx, df, date):
     if (date == 'days' and any(df['Original Date'].str.contains('day'))) or ((not any(df['Original Date'].str.contains('month')) and not any(df['Original Date'].str.contains('year'))) and any(df['Original Date'].str.contains('days'))):
         end_date = datetime.now()
         start_date = end_date - timedelta(days=29)
@@ -530,7 +537,12 @@ def plot_price_vs_upload_date(df, date):
         lines2, labels2 = ax2.get_legend_handles_labels()
         ax2.legend(lines + lines2, labels + labels2, loc='upper left')
         plt.tight_layout()
-        plt.show()
+        filename = 'days.png'
+        plt.savefig(filename)
+        with open(filename, 'rb') as file:
+            image = discord.File(file)
+            await ctx.send(file=image)
+        plt.close()
     elif date == 'months' and any(df['Original Date'].str.contains('month')):
         df_monthly_avg = df.groupby([df["Relative Date"].dt.year, df["Relative Date"].dt.month])["Original Price"].mean()
         df_monthly_avg = df_monthly_avg.sort_index(ascending=True)
@@ -555,7 +567,12 @@ def plot_price_vs_upload_date(df, date):
         ax.set_xticks(x_ticks)
         ax.set_xticklabels(x_labels, rotation=45)
         plt.tight_layout()
-        plt.show()
+        filename = 'months.png'
+        plt.savefig(filename)
+        with open(filename, 'rb') as file:
+            image = discord.File(file)
+            await ctx.send(file=image)
+        plt.close()
     elif date == 'years' and (any(df['Original Date'].str.contains('year')) or any(df['Original Date'].str.contains('years'))):
         df_yearly_avg = df.groupby(df["Relative Date"].dt.year)["Original Price"].mean()
         df_yearly_avg = df_yearly_avg.sort_index(ascending=True)
@@ -579,7 +596,12 @@ def plot_price_vs_upload_date(df, date):
         ax.set_xticks(x_ticks)
         ax.set_xticklabels(x_labels, rotation=45)
         plt.tight_layout()
-        plt.show()
+        filename = 'years.png'
+        plt.savefig(filename)
+        with open(filename, 'rb') as file:
+            image = discord.File(file)
+            await ctx.send(file=image)
+        plt.close()
     else:
         print('Not enough data to show')
     
@@ -598,7 +620,7 @@ def filter_dataframe_by_category(df, category_col, category):
     filtered_df = df[df[category_col] == category].copy()
     return filtered_df
 
-def plot_price_by_size(df, size_col, price_col):
+async def plot_price_by_size(ctx, df, size_col, price_col):
     grouped_df = df.groupby(size_col).agg({price_col: 'mean', size_col: 'count'})
     grouped_df.rename(columns={size_col: 'Volume'}, inplace=True)
     sorted_df = grouped_df.sort_values(price_col)
@@ -616,7 +638,12 @@ def plot_price_by_size(df, size_col, price_col):
     cbar.set_label('Volume')
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.show()
+    filename = 'sizes.png'
+    plt.savefig(filename)
+    with open(filename, 'rb') as file:
+        image = discord.File(file)
+        await ctx.send(file=image)
+    plt.close()
 
 def generate_volume(df):
     volume_df = df.groupby(['Year', 'Month']).size().reset_index(name='Volume')
@@ -722,6 +749,6 @@ categories = {
                       'Scarf', 'Umbrella', 'Boots', 'Mittens', 'Stockings', 'Earmuffs', 'Hair band', 'Safety pin', 'Watch', 'Hat', 'Beanie', 'Cap', 'Beret', 'card holder', 'Straw hat', 'Derby hat', 'Helmet', 'Top hat', 'Mortar board']
 }
 model1 = load_model('model.h5')
-bot.run("MTEyNTkwMjA5ODgyODEwNzg1Nw.Gf3gly.7J8zpYzaOwCf4e4_8zOvk3o61nV11QvuoyQ73E")
+bot.run("YOUR_TOKEN_HERE")
 
 
